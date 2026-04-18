@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Satellite,
   Smartphone,
@@ -68,42 +68,58 @@ export default function PrecisionSurveyingPage() {
     coords: [number, number];
   } | null>(null);
 
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const lastPositionRef = useRef<GeolocationPosition | null>(null);
+
   const startScan = () => {
     setScanState("SCANNING");
     setResult(null);
+    setAccuracy(null);
+    lastPositionRef.current = null;
 
     // Sequential scanning state text updates
     setTimeout(() => setScanText("Acquiring L1/L2 satellite signals..."), 0);
     setTimeout(() => setScanText("Applying RTK corrections..."), 2000);
-    setTimeout(() => setScanText("Averaging position (precision ±0.12m)..."), 4000);
+    setTimeout(() => setScanText("Averaging position..."), 4000);
 
     const startTime = Date.now();
 
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
+      const watchId = navigator.geolocation.watchPosition(
         (position) => {
-          const generatedCoords: [number, number] = [
-            position.coords.latitude,
-            position.coords.longitude,
-          ];
-          const isInside = isPointInPolygon(generatedCoords, MOCK_PLOT_COORDS);
-
-          // Calculate remaining time to maintain the 6-second "ritual" experience
-          const elapsedTime = Date.now() - startTime;
-          const remainingTime = Math.max(0, 6000 - elapsedTime);
-
-          setTimeout(() => {
-            setResult({ isInside, coords: generatedCoords });
-            setScanState("RESULT");
-          }, remainingTime);
+          setAccuracy(position.coords.accuracy);
+          lastPositionRef.current = position;
         },
         (error) => {
           console.error("Error getting location:", error);
           setScanText("GPS Error: " + error.message);
           setTimeout(() => resetScan(), 3000);
         },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
+
+      const checkInterval = setInterval(() => {
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime >= 6000 && lastPositionRef.current) {
+          clearInterval(checkInterval);
+          navigator.geolocation.clearWatch(watchId);
+          
+          const position = lastPositionRef.current;
+          const generatedCoords: [number, number] = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+          const isInside = isPointInPolygon(generatedCoords, MOCK_PLOT_COORDS);
+
+          setResult({ isInside, coords: generatedCoords });
+          setScanState("RESULT");
+        } else if (elapsedTime >= 30000) {
+          clearInterval(checkInterval);
+          navigator.geolocation.clearWatch(watchId);
+          setScanText("GPS Timeout");
+          setTimeout(() => resetScan(), 3000);
+        }
+      }, 500);
     } else {
       setScanText("Geolocation is not supported by your browser");
       setTimeout(() => resetScan(), 3000);
@@ -204,10 +220,15 @@ export default function PrecisionSurveyingPage() {
                     <h3 className="text-xl font-bold text-indigo-300 uppercase tracking-widest animate-pulse">
                       Calibrating
                     </h3>
-                    <div className="h-16 bg-slate-900/80 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 px-4 shadow-inner">
-                      <p className="text-slate-200 font-mono text-sm">
+                    <div className="h-20 bg-slate-900/80 backdrop-blur-md rounded-xl flex flex-col items-center justify-center border border-white/10 px-4 shadow-inner">
+                      <p className="text-slate-200 font-mono text-sm mb-1">
                         {scanText}
                       </p>
+                      {accuracy !== null && (
+                        <p className="text-emerald-400 font-mono text-xs font-bold animate-pulse">
+                          Live Accuracy: ±{accuracy.toFixed(2)}m
+                        </p>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -249,7 +270,10 @@ export default function PrecisionSurveyingPage() {
                       <Crosshair className="w-4 h-4" />
                     </div>
                     <div className="text-slate-300 mb-1">LAT: <span className="text-white font-bold">{result.coords[0].toFixed(6)}</span></div>
-                    <div className="text-slate-300">LNG: <span className="text-white font-bold">{result.coords[1].toFixed(6)}</span></div>
+                    <div className="text-slate-300 mb-1">LNG: <span className="text-white font-bold">{result.coords[1].toFixed(6)}</span></div>
+                    {accuracy !== null && (
+                      <div className="text-slate-300">ACCURACY: <span className="text-emerald-400 font-bold">±{accuracy.toFixed(2)}m</span></div>
+                    )}
                   </div>
 
                   <Button 

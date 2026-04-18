@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { MapContainer, TileLayer, Polygon, Popup, useMap, Marker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -35,12 +35,27 @@ function FitBounds({ plots, userLocation }: { plots: any[]; userLocation?: [numb
   return null; // Цей компонент не рендерить HTML, він лише керує логікою карти
 }
 
+function SelectedPlotPanner({ plots, selectedPlotId }: { plots: any[]; selectedPlotId?: string | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!selectedPlotId) return;
+    const plot = plots.find((p) => p.id === selectedPlotId);
+    if (!plot) return;
+    const bounds = L.latLngBounds(plot.coordinates);
+    if (bounds.isValid()) {
+      map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
+    }
+  }, [selectedPlotId, plots, map]);
+  return null;
+}
+
 interface MapProps {
   plots: any[];
   userLocation?: [number, number] | null;
+  selectedPlotId?: string | null;
 }
 
-export default function Map({ plots, userLocation }: MapProps) {
+export default function Map({ plots, userLocation, selectedPlotId }: MapProps) {
   // Тепер center і zoom тут є лише "стартовими" значеннями.
   // Наш компонент FitBounds миттєво їх перевизначить.
   const initialCenter: [number, number] = [50.35, 24.25];
@@ -66,35 +81,53 @@ export default function Map({ plots, userLocation }: MapProps) {
       />
 
       {/* 2. Додаємо наш новий компонент всередину карти */}
-      <FitBounds plots={plots} userLocation={userLocation} />
+      {!selectedPlotId && <FitBounds plots={plots} userLocation={userLocation} />}
+      <SelectedPlotPanner plots={plots} selectedPlotId={selectedPlotId} />
 
-      {plots.map((plot) => (
-        <Polygon
-          key={plot.id}
-          positions={plot.coordinates}
-          pathOptions={{
-            color: "#00ffaa",
-            fillOpacity: 0.4,
-            weight: 2,
-          }}
-        >
-          <Popup>
-            <div className="p-2 text-gray-800 max-w-[250px]">
-              {" "}
-              {/* Додав max-w, щоб вікно не розтягувалось занадто сильно */}
-              <p className="border-b pb-1 mb-2 font-bold text-lg">
-                Деталі об'єкта
-              </p>
-              <p className="mb-1">
-                <strong>Кадастровий:</strong> {plot.cadastralNumber}
-              </p>
-              <p className="mb-2">
-                <strong>Власник:</strong> {plot.owner}
-              </p>
-            </div>
-          </Popup>
-        </Polygon>
-      ))}
+      {plots.map((plot) => {
+        const isSelected = selectedPlotId === plot.id;
+        return (
+          <React.Fragment key={plot.id}>
+            <Polygon
+              positions={plot.coordinates}
+              pathOptions={{
+                color: plot.color || "#00ffaa",
+                fillOpacity: isSelected ? 0.7 : plot.fillOpacity || 0.4,
+                weight: isSelected ? 4 : 2,
+              }}
+            >
+              <Popup>
+                <div className="p-2 text-gray-800 max-w-[250px]">
+                  {" "}
+                  <p className="border-b pb-1 mb-2 font-bold text-lg">Деталі об'єкта</p>
+                  <p className="mb-1">
+                    <strong>Кадастровий:</strong> {plot.cadastralNumber}
+                  </p>
+                  <p className="mb-2">
+                    <strong>Власник:</strong> {plot.owner}
+                  </p>
+                  {plot.discrepancy && (
+                    <div className="mt-2 p-2 bg-red-100 text-red-800 text-xs rounded border border-red-200">
+                      <strong>Увага:</strong> {plot.discrepancy}
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            </Polygon>
+            {plot.actualCoordinates && (
+              <Polygon
+                positions={plot.actualCoordinates}
+                pathOptions={{
+                  color: "#ef4444",
+                  fillOpacity: 0.3,
+                  weight: 3,
+                  dashArray: "5, 5",
+                }}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
 
       {userLocation && (
         <Marker position={userLocation} icon={pulsingBlueIcon}>
