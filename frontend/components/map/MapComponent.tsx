@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Polygon, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, Popup, useMap, Marker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 // 1. Створюємо допоміжний компонент, який живе ВСЕРЕДИНІ MapContainer
-function FitBounds({ plots }: { plots: any[] }) {
+function FitBounds({ plots, userLocation }: { plots: any[]; userLocation?: [number, number] | null }) {
   const map = useMap(); // Отримуємо доступ до об'єкта карти Leaflet
 
   useEffect(() => {
@@ -22,29 +22,42 @@ function FitBounds({ plots }: { plots: any[] }) {
       });
     });
 
+    if (userLocation) {
+      bounds.extend(userLocation);
+    }
+
     // Якщо межі валідні, центруємо карту з невеликим відступом (padding)
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [50, 50] }); // 50px відступу від країв екрану
     }
-  }, [plots, map]); // useEffect спрацює щоразу, коли зміняться дані ділянок
+  }, [plots, map, userLocation]); // useEffect спрацює щоразу, коли зміняться дані ділянок або локація користувача
 
   return null; // Цей компонент не рендерить HTML, він лише керує логікою карти
 }
 
 interface MapProps {
   plots: any[];
+  userLocation?: [number, number] | null;
 }
 
-export default function Map({ plots }: MapProps) {
+export default function Map({ plots, userLocation }: MapProps) {
   // Тепер center і zoom тут є лише "стартовими" значеннями.
   // Наш компонент FitBounds миттєво їх перевизначить.
   const initialCenter: [number, number] = [50.35, 24.25];
+
+  // Створюємо іконку для синьої крапки
+  const pulsingBlueIcon = L.divIcon({
+    className: "bg-transparent",
+    html: `<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_15px_3px_rgba(59,130,246,0.8)] animate-pulse"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
 
   return (
     <MapContainer
       center={initialCenter}
       zoom={13}
-      style={{ height: "600px", width: "100%", borderRadius: "12px" }}
+      style={{ height: "100%", width: "100%", borderRadius: "12px", minHeight: "400px" }}
     >
       <TileLayer
         url="http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
@@ -53,7 +66,7 @@ export default function Map({ plots }: MapProps) {
       />
 
       {/* 2. Додаємо наш новий компонент всередину карти */}
-      <FitBounds plots={plots} />
+      <FitBounds plots={plots} userLocation={userLocation} />
 
       {plots.map((plot) => (
         <Polygon
@@ -82,6 +95,14 @@ export default function Map({ plots }: MapProps) {
           </Popup>
         </Polygon>
       ))}
+
+      {userLocation && (
+        <Marker position={userLocation} icon={pulsingBlueIcon}>
+          <Popup>
+            <div className="p-1 font-bold text-sm">Поточна позиція</div>
+          </Popup>
+        </Marker>
+      )}
     </MapContainer>
   );
 }

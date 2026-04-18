@@ -1,208 +1,303 @@
 "use client";
 
+import { useState } from "react";
 import {
-  Camera,
-  MapPinned,
-  Zap,
-  Crosshair,
   Satellite,
-  CheckCircle2,
-  Focus,
+  Smartphone,
+  Crosshair,
+  Zap,
+  ShieldCheck,
+  AlertTriangle,
+  RefreshCcw,
+  Signal,
+  MapPinned
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import { Card, Button } from "@/components/ui";
 
-export const PrecisePlotsView = () => {
+// Dynamic import of the existing Map component to avoid SSR issues
+const MapWithNoSSR = dynamic(() => import("@/components/map/MapComponent"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full bg-slate-900 animate-pulse flex items-center justify-center text-slate-500 rounded-2xl">
+      <Satellite className="animate-spin w-8 h-8 mr-2" />
+      Ініціалізація карти...
+    </div>
+  ),
+});
+
+// 1. MOCK_PLOT object (Rectangle)
+const MOCK_PLOT_COORDS: [number, number][] = [
+  [50.350, 24.250],
+  [50.352, 24.250],
+  [50.352, 24.254],
+  [50.350, 24.253],
+];
+
+const MOCK_PLOT = {
+  id: "mock-plot-1",
+  cadastralNumber: "8000000000:90:123:4567",
+  owner: "Тестовий Полігон",
+  coordinates: MOCK_PLOT_COORDS,
+};
+
+// 2. Geofencing Algorithm (Ray-casting)
+function isPointInPolygon(point: [number, number], polygon: [number, number][]) {
+  const [lat, lng] = point;
+  let isInside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [latI, lngI] = polygon[i];
+    const [latJ, lngJ] = polygon[j];
+
+    const intersect =
+      lngI > lng !== lngJ > lng &&
+      lat < ((latJ - latI) * (lng - lngI)) / (lngJ - lngI) + latI;
+    if (intersect) isInside = !isInside;
+  }
+  return isInside;
+}
+
+type ScanState = "IDLE" | "SCANNING" | "RESULT";
+
+export default function PrecisionSurveyingPage() {
+  const [scanState, setScanState] = useState<ScanState>("IDLE");
+  const [scanText, setScanText] = useState("");
+  const [result, setResult] = useState<{
+    isInside: boolean;
+    coords: [number, number];
+  } | null>(null);
+
+  const startScan = () => {
+    setScanState("SCANNING");
+    setResult(null);
+
+    // Sequential scanning state text updates
+    setTimeout(() => setScanText("Acquiring L1/L2 satellite signals..."), 0);
+    setTimeout(() => setScanText("Applying RTK corrections..."), 2000);
+    setTimeout(() => setScanText("Averaging position (precision ±0.12m)..."), 4000);
+
+    const startTime = Date.now();
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const generatedCoords: [number, number] = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+          const isInside = isPointInPolygon(generatedCoords, MOCK_PLOT_COORDS);
+
+          // Calculate remaining time to maintain the 6-second "ritual" experience
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, 6000 - elapsedTime);
+
+          setTimeout(() => {
+            setResult({ isInside, coords: generatedCoords });
+            setScanState("RESULT");
+          }, remainingTime);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setScanText("GPS Error: " + error.message);
+          setTimeout(() => resetScan(), 3000);
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+      );
+    } else {
+      setScanText("Geolocation is not supported by your browser");
+      setTimeout(() => resetScan(), 3000);
+    }
+  };
+
+  const resetScan = () => {
+    setScanState("IDLE");
+    setResult(null);
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-12 items-center">
-        {/* Ліва колонка: Контент та Дії */}
-        <div className="xl:col-span-5 space-y-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-bold uppercase tracking-widest mb-2">
-              <Satellite className="w-4 h-4" />
-              GEO-Аналіз
-            </div>
-            <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 leading-[1.1]">
-              Ваші точні <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-500">
-                фактичні межі
-              </span>
-            </h2>
-            <p className="text-slate-500 text-lg leading-relaxed">
-              Використовуйте супутникові дані та метадані фотографій для
-              автоматичного зіставлення реальних меж з кадастровим реєстром.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Інструмент 1 */}
-            <Card className="group relative p-6 border-2 border-transparent ring-1 ring-slate-200 hover:ring-indigo-500 hover:border-indigo-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer overflow-hidden transition-all duration-300 bg-white">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Camera className="w-16 h-16 -mr-4 -mt-4 text-indigo-900" />
-              </div>
-              <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-600 transition-all duration-300">
-                <Camera className="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" />
-              </div>
-              <h4 className="font-bold text-slate-900 mb-1 group-hover:text-indigo-700 transition-colors">
-                Фото з GPS
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Завантажте фото ділянки, система сама витягне координати.
-              </p>
-            </Card>
-
-            {/* Інструмент 2 */}
-            <Card className="group relative p-6 border-2 border-transparent ring-1 ring-slate-200 hover:ring-violet-500 hover:border-violet-100 shadow-sm hover:shadow-xl hover:shadow-violet-500/10 cursor-pointer overflow-hidden transition-all duration-300 bg-white">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <MapPinned className="w-16 h-16 -mr-4 -mt-4 text-violet-900" />
-              </div>
-              <div className="w-12 h-12 bg-violet-50 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-violet-600 transition-all duration-300">
-                <MapPinned className="w-6 h-6 text-violet-600 group-hover:text-white transition-colors" />
-              </div>
-              <h4 className="font-bold text-slate-900 mb-1 group-hover:text-violet-700 transition-colors">
-                Малювання меж
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Вкажіть точний контур вручну на супутниковому знімку.
-              </p>
-            </Card>
-          </div>
-
-          <Button className="w-full h-14 text-lg font-bold rounded-xl flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-900/20 hover:-translate-y-0.5 transition-all">
-            <Zap className="w-5 h-5 fill-amber-400 text-amber-400" />
-            Розпочати аналіз
-          </Button>
+    <div className="space-y-8 animate-in fade-in duration-700 max-w-7xl mx-auto pb-10">
+      <div className="flex flex-col gap-3">
+        <div className="inline-flex items-center w-max gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-bold uppercase tracking-widest mb-1">
+          <Satellite className="w-4 h-4" />
+          GEO-Аналіз
         </div>
+        <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+          High-Precision GPS Survey
+        </h2>
+        <p className="text-slate-500 text-lg">
+          Professional calibration tool with RTK simulation and real-time geofencing algorithm.
+        </p>
+      </div>
 
-        {/* Права колонка: Інтерактивна Мапа */}
-        <div className="xl:col-span-7">
-          <Card className="relative h-[550px] bg-slate-950 overflow-hidden rounded-2xl border-slate-200 shadow-2xl shadow-indigo-500/10 group">
-            {/* Супутниковий знімок */}
-            <img
-              src="https://picsum.photos/seed/satellite123/1200/1000"
-              className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity group-hover:scale-105 transition-transform duration-1000"
-              alt="Satellite View"
-              referrerPolicy="no-referrer"
-            />
-
-            {/* Сітка координат поверх карти */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-
-            {/* Відмальований полігон (ділянка) */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-              <defs>
-                <linearGradient
-                  id="polyGrad"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        {/* Left Panel: Calibration Interface */}
+        <div className="lg:col-span-5 flex flex-col h-[500px]">
+          <Card className="relative overflow-hidden p-8 border-0 shadow-2xl shadow-indigo-900/10 bg-slate-950 text-white flex-1 flex flex-col justify-center items-center text-center">
+            
+            <AnimatePresence mode="wait">
+              {/* IDLE STATE */}
+              {scanState === "IDLE" && (
+                <motion.div
+                  key="idle"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex flex-col items-center gap-6"
                 >
-                  <stop offset="0%" stopColor="rgba(79, 70, 229, 0.4)" />
-                  <stop offset="100%" stopColor="rgba(124, 58, 237, 0.1)" />
-                </linearGradient>
-              </defs>
-              <polygon
-                points="200,150 450,120 500,350 180,400"
-                className="fill-[url(#polyGrad)] stroke-indigo-400 stroke-[3] stroke-dasharray-4 animate-pulse"
-              />
-              {/* Точки (піни) на кутах */}
-              <circle
-                cx="200"
-                cy="150"
-                r="6"
-                className="fill-white stroke-indigo-500 stroke-[3]"
-              />
-              <circle
-                cx="450"
-                cy="120"
-                r="6"
-                className="fill-white stroke-indigo-500 stroke-[3]"
-              />
-              <circle
-                cx="500"
-                cy="350"
-                r="6"
-                className="fill-white stroke-indigo-500 stroke-[3]"
-              />
-              <circle
-                cx="180"
-                cy="400"
-                r="6"
-                className="fill-white stroke-indigo-500 stroke-[3]"
-              />
-            </svg>
-
-            {/* Анімований "лазер" сканера */}
-            <motion.div
-              className="absolute left-0 right-0 h-1 bg-indigo-400 shadow-[0_0_20px_4px_rgba(99,102,241,0.5)] z-20 pointer-events-none opacity-50"
-              animate={{ top: ["0%", "100%", "0%"] }}
-              transition={{ duration: 6, ease: "linear", repeat: Infinity }}
-            />
-
-            {/* UI Мапи: Верхня панель статусів (Glassmorphism) */}
-            <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-30 pointer-events-none">
-              {/* Статус GPS */}
-              <div className="bg-slate-900/60 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-lg flex items-center gap-3">
-                <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20">
-                  <div className="absolute w-full h-full rounded-full border border-emerald-500/50 animate-ping" />
-                  <Crosshair className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-0.5">
-                    Сигнал GPS
-                  </p>
-                  <p className="text-white text-sm font-bold tracking-tight">
-                    Висока точність (±0.4м)
-                  </p>
-                </div>
-              </div>
-
-              {/* Інструменти карти */}
-              <div className="flex flex-col gap-2">
-                <div className="w-10 h-10 bg-slate-900/60 backdrop-blur-md rounded-xl border border-white/10 flex items-center justify-center text-white hover:bg-slate-800 transition-colors pointer-events-auto cursor-pointer">
-                  <Focus className="w-5 h-5" />
-                </div>
-              </div>
-            </div>
-
-            {/* UI Мапи: Нижня панель результату (Поп-ап) */}
-            <div className="absolute bottom-6 left-6 right-6 z-30 pointer-events-none">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-slate-900/80 backdrop-blur-xl p-5 rounded-2xl border border-white/10 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-emerald-500/20 rounded-xl mt-1 sm:mt-0">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                  <div className="w-24 h-24 bg-indigo-500/20 rounded-2xl flex items-center justify-center border border-indigo-500/30">
+                    <Smartphone className="w-12 h-12 text-indigo-400" />
                   </div>
                   <div>
-                    <h4 className="text-white font-bold text-lg mb-1 tracking-tight">
-                      Аналіз завершено
-                    </h4>
-                    <p className="text-slate-300 text-sm leading-relaxed max-w-md">
-                      Фактичні межі збігаються з реєстром на{" "}
-                      <span className="text-white font-bold">98%</span>.
-                      Виявлено незначну розбіжність (
-                      <span className="text-rose-400 font-bold">+42 м²</span>)
-                      біля північної межі.
+                    <h3 className="text-2xl font-bold mb-3 text-white">Device Ready</h3>
+                    <p className="text-slate-400 text-sm max-w-[280px] leading-relaxed mx-auto">
+                      Place the device flat on the ground for GPS stabilization and RTK synchronization.
                     </p>
                   </div>
-                </div>
+                  <Button 
+                    onClick={startScan}
+                    className="mt-4 h-14 px-8 text-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] flex items-center gap-2 hover:-translate-y-1 transition-all"
+                  >
+                    <Zap className="w-5 h-5 fill-current" />
+                    Start Calibration
+                  </Button>
+                </motion.div>
+              )}
 
-                <Button className="w-full sm:w-auto pointer-events-auto bg-white hover:bg-slate-100 text-slate-900 font-bold border-0 shadow-lg">
-                  Переглянути звіт
-                </Button>
-              </motion.div>
+              {/* SCANNING STATE */}
+              {scanState === "SCANNING" && (
+                <motion.div
+                  key="scanning"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.1 }}
+                  className="flex flex-col items-center gap-10 w-full px-4"
+                >
+                  <div className="relative w-40 h-40 flex items-center justify-center">
+                    {/* Rotating Radars */}
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      className="absolute inset-0 rounded-full border-t-4 border-indigo-500 opacity-80"
+                    />
+                    <motion.div
+                      animate={{ rotate: -360 }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                      className="absolute inset-4 rounded-full border-b-4 border-cyan-400 opacity-60"
+                    />
+                    <motion.div
+                      animate={{ rotate: 180 }}
+                      transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+                      className="absolute inset-8 rounded-full border-r-2 border-slate-500 opacity-40"
+                    />
+                    {/* Pulsing Core */}
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="w-14 h-14 bg-indigo-500 rounded-full shadow-[0_0_40px_rgba(79,70,229,0.9)] flex items-center justify-center"
+                    >
+                      <Signal className="w-7 h-7 text-white animate-pulse" />
+                    </motion.div>
+                  </div>
+                  
+                  <div className="w-full space-y-4">
+                    <h3 className="text-xl font-bold text-indigo-300 uppercase tracking-widest animate-pulse">
+                      Calibrating
+                    </h3>
+                    <div className="h-16 bg-slate-900/80 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 px-4 shadow-inner">
+                      <p className="text-slate-200 font-mono text-sm">
+                        {scanText}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* RESULT STATE */}
+              {scanState === "RESULT" && result && (
+                <motion.div
+                  key="result"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center gap-6 w-full px-4"
+                >
+                  {result.isInside ? (
+                    <>
+                      <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center border border-emerald-500/50 shadow-[0_0_50px_rgba(16,185,129,0.4)]">
+                        <ShieldCheck className="w-12 h-12 text-emerald-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-3xl font-bold text-emerald-400 mb-2">Inside Boundaries</h3>
+                        <p className="text-slate-300">Point within boundaries</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-24 h-24 bg-rose-500/20 rounded-full flex items-center justify-center border border-rose-500/50 shadow-[0_0_50px_rgba(244,63,94,0.4)]">
+                        <AlertTriangle className="w-12 h-12 text-rose-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-3xl font-bold text-rose-400 mb-2">Outside Boundaries</h3>
+                        <p className="text-slate-300">Boundary violation detected</p>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="w-full bg-slate-900/60 backdrop-blur-md p-5 rounded-xl border border-white/10 font-mono text-sm text-left mb-2 shadow-lg">
+                    <div className="flex justify-between items-center text-slate-400 mb-2 pb-2 border-b border-white/5">
+                      <span className="uppercase text-[10px] tracking-widest">Coordinates</span>
+                      <Crosshair className="w-4 h-4" />
+                    </div>
+                    <div className="text-slate-300 mb-1">LAT: <span className="text-white font-bold">{result.coords[0].toFixed(6)}</span></div>
+                    <div className="text-slate-300">LNG: <span className="text-white font-bold">{result.coords[1].toFixed(6)}</span></div>
+                  </div>
+
+                  <Button 
+                    onClick={resetScan}
+                    className="w-full h-14 bg-transparent border-2 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-colors rounded-xl font-bold"
+                  >
+                    <RefreshCcw className="w-5 h-5 mr-2" />
+                    Reset & Rescan
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+        </div>
+
+        {/* Right Panel: Map */}
+        <div className="lg:col-span-7 h-[500px]">
+          <Card className="h-full w-full overflow-hidden border border-slate-200 shadow-xl relative bg-slate-100 rounded-2xl">
+            <MapWithNoSSR 
+              plots={[MOCK_PLOT]} 
+              userLocation={result ? result.coords : null}
+            />
+            
+            {/* Overlay Glassmorphism Info */}
+            <div className="absolute top-6 left-6 z-[400] pointer-events-none">
+              <div className="bg-white/90 backdrop-blur-xl p-4 rounded-xl shadow-lg border border-slate-200 flex items-center gap-4">
+                <div className="bg-indigo-100 p-2 rounded-lg">
+                  <MapPinned className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Live Map</p>
+                  <p className="text-sm font-black text-slate-900">RTK Polygon Viewer</p>
+                </div>
+              </div>
             </div>
+            
+            {/* Status Indicator */}
+            {scanState === "SCANNING" && (
+              <div className="absolute top-6 right-6 z-[400] pointer-events-none">
+                <div className="bg-indigo-600/90 backdrop-blur-xl px-4 py-2 rounded-full shadow-lg border border-indigo-500 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-white animate-ping" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Live Sync</span>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>
     </div>
   );
-};
-
-export default PrecisePlotsView;
+}

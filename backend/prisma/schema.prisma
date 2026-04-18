@@ -17,3 +17,38 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model LandRecord {
+  id               String    @id @default(uuid())
+  cadastralNumber  String    @unique @map("cadastral_number")
+  koatuu           String?
+  ownershipForm    String?   @map("ownership_form")
+  purpose          String?
+  location         String?
+  agriLandType     String?   @map("agri_land_type")
+  areaHa           Float?    @map("area_ha")
+  valuation        Decimal?
+  taxNumber        String    @map("tax_number")
+  ownerName        String?   @map("owner_name")
+  ownershipShare   String?   @map("ownership_share")
+  registrationDate DateTime? @map("registration_date")
+  recordNumber     String?   @map("record_number")
+  registrarOrgan   String?   @map("registrar_organ")
+  docType          String?   @map("doc_type")
+  docSubtype       String?   @map("doc_subtype")
+  createdAt        DateTime  @default(now()) @map("created_at")
+}
+
+model RealEstateRecord {
+  id                  String    @id @default(uuid())
+  taxNumber           String    @map("tax_number")
+  ownerName           String?   @map("owner_name")
+  objectType          String?   @map("object_type")
+  address             String?
+  registrationDate    DateTime? @map("registration_date")
+  terminationDate     DateTime? @map("termination_date")
+  totalArea           Float?    @map("total_area")
+  ownershipType       String?   @map("ownership_type")
+  ownershipShareValue Float?    @map("ownership_share_value")
+  createdAt           DateTime  @default(now()) @map("created_at")
+}
