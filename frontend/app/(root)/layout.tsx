@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   MapIcon,
   MapPinned,
+  FolderCheck,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -15,6 +16,7 @@ import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import CommNavbar from "@/components/CommNavBar";
+import path from "path";
 
 export default function MainLayout({
   children,
@@ -26,7 +28,7 @@ export default function MainLayout({
   const navItems: any[] = [
     { id: "dashboard", label: "Головна", icon: LayoutDashboard },
     { id: "discrepancies", label: "Розбіжності", icon: AlertCircle },
-    { id: "precise", label: "Мої шматки", icon: MapIcon },
+    { id: "precise", label: "Моя ділянка", icon: MapIcon },
     { id: "taxes", label: "Податки", icon: CreditCard },
   ];
 
@@ -34,6 +36,7 @@ export default function MainLayout({
     { id: "/community/dashboard", label: "Дашборд", icon: LayoutDashboard },
     { id: "/community/map", label: "Мапа громади", icon: MapPinned },
     { id: "/community/plots", label: "Ділянки", icon: MapIcon },
+    { id: "/community/requests", label: "Заявки", icon: FolderCheck },
     { id: "/community/taxes", label: "Податки", icon: CreditCard },
     { id: "/community/profile", label: "Профіль ОТГ", icon: Building2 },
   ];
@@ -44,11 +47,12 @@ export default function MainLayout({
 
   // 3. Активна вкладка — це просто наш поточний URL!
   const activeTab = pathname || "/dashboard";
-
+  const pathBase = pathname ? pathname.split("/")[1] : "";
   // 4. Шукаємо назву (label) саме в ПОТОЧНОМУ масиві
   const currentTabLabel =
     currentNavItems.find((n) => n.id === activeTab)?.label || "Головна";
-
+  const tabLabel =
+    currentNavItems.find((n) => n.id === pathBase)?.label || "Головна";
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#f8f9fc]">
       <Sidebar
@@ -66,7 +70,7 @@ export default function MainLayout({
 
       <main className="flex-1 min-w-0 flex flex-col h-screen">
         {isCommunitySection && <CommNavbar currentTabLabel={currentTabLabel} />}
-        {!isCommunitySection && <Navbar currentTabLabel={currentTabLabel} />}
+        {!isCommunitySection && <Navbar currentTabLabel={tabLabel} />}
 
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 lg:p-10 max-w-[1440px] mx-auto">

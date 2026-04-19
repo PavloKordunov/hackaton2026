@@ -6,25 +6,40 @@ export class CommunitiesController {
   constructor(private readonly communitiesService: CommunitiesService) {}
 
   @Get(':slug')
-  getProfile(@Param('slug') slug: string) {
+  async getProfile(@Param('slug') slug: string) {
     return this.communitiesService.getCommunityProfile(slug);
   }
 
   @Get(':slug/dashboard')
-  getDashboard(@Param('slug') slug: string) {
+  async getDashboard(@Param('slug') slug: string) {
     return this.communitiesService.getCommunityDashboard(slug);
   }
 
   @Get(':slug/plots')
-  getPlots(
+  async getPlots(
     @Param('slug') slug: string,
     @Query('settlement') settlement?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.communitiesService.getCommunityPlots(slug, settlement);
+    return this.communitiesService.getCommunityPlots(
+      slug,
+      settlement,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
   }
 
   @Get(':slug/taxes')
-  getTaxes(@Param('slug') slug: string) {
-    return this.communitiesService.getCommunityTaxes(slug);
+  async getTaxes(
+    @Param('slug') slug: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.communitiesService.getCommunityTaxes(
+      slug,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
   }
 }

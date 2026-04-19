@@ -21,7 +21,7 @@ const Sidebar = ({ type, navItems, activeTab }: SidebarProps) => (
         <Building2 className="text-white w-6 h-6" />
       </div>
       <span className="hidden lg:block text-2xl font-black tracking-tighter text-slate-800 uppercase">
-        {type === "community" ? "Resilog OTG" : "Resilog "}
+        LAND/A/HAND
       </span>
     </div>
     <nav className="flex-1 px-3 space-y-1">

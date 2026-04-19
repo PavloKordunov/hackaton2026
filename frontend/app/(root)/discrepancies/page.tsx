@@ -10,7 +10,7 @@ import {
   Search,
   Filter,
   ChevronRight,
-  Maximize2
+  Maximize2,
 } from "lucide-react";
 import { Card } from "@/components/ui";
 
@@ -28,7 +28,7 @@ const MOCK_PLOTS = [
   {
     id: "1",
     cadastralNumber: "4624884200:15:000:0956",
-    owner: "Музичук Надія Олексіївна",
+    owner: "Карпів Петро Іванович",
     coordinates: [
       [50.448218, 24.187842],
       [50.448044, 24.187801],
@@ -38,7 +38,8 @@ const MOCK_PLOTS = [
     ],
     status: "Discrepancy",
     discrepancyType: "Самовільне захоплення (Encroachment)",
-    discrepancy: "Фактичні межі ділянки зміщені на північний схід. Спостерігається накладання на сусідню територію.",
+    discrepancy:
+      "Фактичні межі ділянки зміщені на північний схід. Спостерігається накладання на сусідню територію.",
     color: "#f59e0b",
     fillOpacity: 0.5,
     actualCoordinates: [
@@ -52,7 +53,7 @@ const MOCK_PLOTS = [
   {
     id: "2",
     cadastralNumber: "4624884200:06:000:0486",
-    owner: "Смоляр Галина Миколаївна",
+    owner: "Карпів Петро Іванович",
     coordinates: [
       [50.426283, 24.172519],
       [50.426235, 24.173002],
@@ -66,7 +67,7 @@ const MOCK_PLOTS = [
   {
     id: "3",
     cadastralNumber: "4624884200:19:004:0024",
-    owner: "Домашевич Богдан Дмитрович",
+    owner: "Карпів Петро Іванович",
     coordinates: [
       [50.420708, 24.18828],
       [50.419316, 24.187904],
@@ -80,7 +81,7 @@ const MOCK_PLOTS = [
   {
     id: "4",
     cadastralNumber: "4624881300:08:000:0020",
-    owner: "Іваневич Володимир Володимирович",
+    owner: "Карпів Петро Іванович",
     coordinates: [
       [50.319224, 24.313249],
       [50.319195, 24.313369],
@@ -94,7 +95,7 @@ const MOCK_PLOTS = [
   {
     id: "5",
     cadastralNumber: "4624884200:08:000:0086",
-    owner: "Грицина Іван Іванович",
+    owner: "Карпів Петро Іванович",
     coordinates: [
       [50.398199, 24.15032],
       [50.398166, 24.15073],
@@ -103,7 +104,8 @@ const MOCK_PLOTS = [
     ],
     status: "Discrepancy",
     discrepancyType: "Розбіжність площі (Area Mismatch)",
-    discrepancy: "Фактична площа обробітку перевищує кадастрові межі, зачіпаючи дорогу.",
+    discrepancy:
+      "Фактична площа обробітку перевищує кадастрові межі, зачіпаючи дорогу.",
     color: "#ef4444",
     fillOpacity: 0.5,
     actualCoordinates: [
@@ -116,7 +118,7 @@ const MOCK_PLOTS = [
   {
     id: "6",
     cadastralNumber: "4611800000:02:008:0043",
-    owner: 'ТОВ "Агро-Транс"',
+    owner: "Карпів Петро Іванович",
     coordinates: [
       [50.397479, 24.234986],
       [50.397453, 24.235077],
@@ -130,7 +132,7 @@ const MOCK_PLOTS = [
   {
     id: "7",
     cadastralNumber: "4624884200:16:000:0195",
-    owner: 'ТОВ "Агро-Транс"',
+    owner: "Карпів Петро Іванович",
     coordinates: [
       [50.442895, 24.216017],
       [50.442895, 24.216184],
@@ -145,7 +147,9 @@ const MOCK_PLOTS = [
 
 export default function DiscrepanciesPage() {
   const [selectedPlotId, setSelectedPlotId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"All" | "Discrepancy" | "Verified">("All");
+  const [filter, setFilter] = useState<"All" | "Discrepancy" | "Verified">(
+    "All",
+  );
 
   const filteredPlots = MOCK_PLOTS.filter((plot) => {
     if (filter === "All") return true;
@@ -159,13 +163,14 @@ export default function DiscrepanciesPage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold uppercase tracking-widest mb-2">
             <AlertCircle className="w-4 h-4" />
-            Auditor Mode
+            Режим аудиту
           </div>
           <h2 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-            Land Discrepancies Analysis
+            Аналіз розбіжностей земельних ділянок
           </h2>
           <p className="text-slate-500 mt-1">
-            Detect and resolve boundary overlaps, area mismatches, and unauthorized structures.
+            Виявити та усунути накладання меж, розбіжності площі та самовільні
+            споруди.
           </p>
         </div>
 
@@ -180,7 +185,11 @@ export default function DiscrepanciesPage() {
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
               }`}
             >
-              {f}
+              {f === "All"
+                ? "Усі"
+                : f === "Discrepancy"
+                  ? "Розбіжності"
+                  : "Перевірено"}
               {f === "Discrepancy" && (
                 <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-500 text-[10px] text-white">
                   3
@@ -198,7 +207,7 @@ export default function DiscrepanciesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by cadastral number or owner..."
+              placeholder="Пошук по кадастровому номеру або власнику..."
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-medium"
             />
           </div>
@@ -225,14 +234,14 @@ export default function DiscrepanciesPage() {
                       isDiscrepancy && !isSelected
                         ? "border-l-rose-400"
                         : !isSelected
-                        ? "border-l-emerald-400"
-                        : ""
+                          ? "border-l-emerald-400"
+                          : ""
                     }`}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
-                          Cadastral Number
+                          Кадастровий номер
                         </p>
                         <p className="font-mono text-sm font-bold text-slate-900">
                           {plot.cadastralNumber}
@@ -241,19 +250,23 @@ export default function DiscrepanciesPage() {
                       {isDiscrepancy ? (
                         <div className="bg-rose-100 text-rose-700 p-1.5 rounded-lg flex items-center gap-1 border border-rose-200">
                           <AlertCircle className="w-4 h-4" />
-                          <span className="text-[10px] font-black uppercase hidden sm:inline">Action Required</span>
+                          <span className="text-[10px] font-black uppercase hidden sm:inline">
+                            Потрібна дія
+                          </span>
                         </div>
                       ) : (
                         <div className="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg flex items-center gap-1 border border-emerald-200">
                           <CheckCircle2 className="w-4 h-4" />
-                          <span className="text-[10px] font-black uppercase hidden sm:inline">Verified</span>
+                          <span className="text-[10px] font-black uppercase hidden sm:inline">
+                            Перевірено
+                          </span>
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-slate-600">
-                        <span className="font-semibold w-20">Owner:</span>
+                        <span className="font-semibold w-20">Власник:</span>
                         <span className="truncate">{plot.owner}</span>
                       </div>
 
@@ -271,12 +284,12 @@ export default function DiscrepanciesPage() {
                     </div>
 
                     {isSelected && (
-                      <motion.div 
-                        initial={{ opacity: 0 }} 
+                      <motion.div
+                        initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="mt-4 pt-3 border-t border-indigo-100 flex items-center text-xs font-bold text-indigo-600 uppercase tracking-widest gap-1"
                       >
-                        Viewing on map <ChevronRight className="w-3 h-3" />
+                        Перегляд на карті <ChevronRight className="w-3 h-3" />
                       </motion.div>
                     )}
                   </Card>
@@ -289,28 +302,32 @@ export default function DiscrepanciesPage() {
         {/* Right Area: Map */}
         <div className="xl:col-span-8 h-full min-h-[500px]">
           <Card className="h-full w-full overflow-hidden border-2 border-slate-200 shadow-xl relative bg-slate-100 rounded-2xl group">
-            <MapWithNoSSR 
-              plots={filteredPlots} 
+            <MapWithNoSSR
+              plots={filteredPlots}
               selectedPlotId={selectedPlotId}
             />
-            
             <div className="absolute top-4 left-4 z-[400] pointer-events-none">
               <div className="bg-white/90 backdrop-blur-xl p-3 rounded-xl shadow-lg border border-slate-200 flex items-center gap-3">
                 <div className="bg-slate-100 p-2 rounded-lg border border-slate-200">
                   <Layers className="w-5 h-5 text-slate-700" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Layer</p>
-                  <p className="text-sm font-black text-slate-900">Cadastral vs Satellite</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">
+                    Шар
+                  </p>
+                  <p className="text-sm font-black text-slate-900">
+                    Кадастр vs Супутник
+                  </p>
                 </div>
               </div>
-            </div>
-            
+            </div>{" "}
           </Card>
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{__html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
@@ -321,7 +338,9 @@ export default function DiscrepanciesPage() {
           background-color: #cbd5e1;
           border-radius: 10px;
         }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 }
