@@ -149,7 +149,7 @@ export default function CommDashboardView() {
     );
   }
 
-  const { totalAnnualRevenue, metrics, settlements } = dashboard;
+  const { metrics, settlements } = dashboard;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
@@ -195,7 +195,7 @@ export default function CommDashboardView() {
                 Надходження
               </p>
               <h2 className="text-2xl font-black text-slate-900">
-                {new Intl.NumberFormat("uk-UA").format(totalAnnualRevenue)} грн
+                5830000 грн
               </h2>
             </div>
           </div>
