@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Layers,
   Search,
-  Filter,
   ChevronRight,
   Maximize2,
 } from "lucide-react";
@@ -28,7 +27,7 @@ const MOCK_PLOTS = [
   {
     id: "1",
     cadastralNumber: "4624884200:15:000:0956",
-    owner: "Карпів Петро Іванович",
+    owner: "Музичук Надія Олексіївна",
     coordinates: [
       [50.448218, 24.187842],
       [50.448044, 24.187801],
@@ -53,7 +52,7 @@ const MOCK_PLOTS = [
   {
     id: "2",
     cadastralNumber: "4624884200:06:000:0486",
-    owner: "Карпів Петро Іванович",
+    owner: "Смоляр Галина Миколаївна",
     coordinates: [
       [50.426283, 24.172519],
       [50.426235, 24.173002],
@@ -67,7 +66,7 @@ const MOCK_PLOTS = [
   {
     id: "3",
     cadastralNumber: "4624884200:19:004:0024",
-    owner: "Карпів Петро Іванович",
+    owner: "Домашевич Богдан Дмитрович",
     coordinates: [
       [50.420708, 24.18828],
       [50.419316, 24.187904],
@@ -81,7 +80,7 @@ const MOCK_PLOTS = [
   {
     id: "4",
     cadastralNumber: "4624881300:08:000:0020",
-    owner: "Карпів Петро Іванович",
+    owner: "Іваневич Володимир Володимирович",
     coordinates: [
       [50.319224, 24.313249],
       [50.319195, 24.313369],
@@ -95,7 +94,7 @@ const MOCK_PLOTS = [
   {
     id: "5",
     cadastralNumber: "4624884200:08:000:0086",
-    owner: "Карпів Петро Іванович",
+    owner: "Грицина Іван Іванович",
     coordinates: [
       [50.398199, 24.15032],
       [50.398166, 24.15073],
@@ -118,7 +117,7 @@ const MOCK_PLOTS = [
   {
     id: "6",
     cadastralNumber: "4611800000:02:008:0043",
-    owner: "Карпів Петро Іванович",
+    owner: 'ТОВ "Агро-Транс"',
     coordinates: [
       [50.397479, 24.234986],
       [50.397453, 24.235077],
@@ -132,7 +131,7 @@ const MOCK_PLOTS = [
   {
     id: "7",
     cadastralNumber: "4624884200:16:000:0195",
-    owner: "Карпів Петро Іванович",
+    owner: 'ТОВ "Агро-Транс"',
     coordinates: [
       [50.442895, 24.216017],
       [50.442895, 24.216184],
@@ -145,11 +144,11 @@ const MOCK_PLOTS = [
   },
 ];
 
+type PlotFilter = "All" | "Discrepancy" | "Verified";
+
 export default function DiscrepanciesPage() {
   const [selectedPlotId, setSelectedPlotId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"All" | "Discrepancy" | "Verified">(
-    "All",
-  );
+  const [filter, setFilter] = useState<PlotFilter>("All");
 
   const filteredPlots = MOCK_PLOTS.filter((plot) => {
     if (filter === "All") return true;
@@ -163,33 +162,29 @@ export default function DiscrepanciesPage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold uppercase tracking-widest mb-2">
             <AlertCircle className="w-4 h-4" />
-            Режим аудиту
+            Auditor Mode
           </div>
           <h2 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-            Аналіз розбіжностей земельних ділянок
+            Land Discrepancies Analysis
           </h2>
           <p className="text-slate-500 mt-1">
-            Виявити та усунути накладання меж, розбіжності площі та самовільні
-            споруди.
+            Detect and resolve boundary overlaps, area mismatches, and
+            unauthorized structures.
           </p>
         </div>
 
         <div className="flex gap-2">
-          {["All", "Discrepancy", "Verified"].map((f) => (
+          {(["All", "Discrepancy", "Verified"] as PlotFilter[]).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f as any)}
+              onClick={() => setFilter(f)}
               className={`px-4 py-2 text-sm font-bold rounded-lg border transition-all ${
                 filter === f
                   ? "bg-slate-900 text-white border-slate-900 shadow-md"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
               }`}
             >
-              {f === "All"
-                ? "Усі"
-                : f === "Discrepancy"
-                  ? "Розбіжності"
-                  : "Перевірено"}
+              {f}
               {f === "Discrepancy" && (
                 <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-500 text-[10px] text-white">
                   3
@@ -207,7 +202,7 @@ export default function DiscrepanciesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Пошук по кадастровому номеру або власнику..."
+              placeholder="Search by cadastral number or owner..."
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-medium"
             />
           </div>
@@ -241,7 +236,7 @@ export default function DiscrepanciesPage() {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
-                          Кадастровий номер
+                          Cadastral Number
                         </p>
                         <p className="font-mono text-sm font-bold text-slate-900">
                           {plot.cadastralNumber}
@@ -251,14 +246,14 @@ export default function DiscrepanciesPage() {
                         <div className="bg-rose-100 text-rose-700 p-1.5 rounded-lg flex items-center gap-1 border border-rose-200">
                           <AlertCircle className="w-4 h-4" />
                           <span className="text-[10px] font-black uppercase hidden sm:inline">
-                            Потрібна дія
+                            Action Required
                           </span>
                         </div>
                       ) : (
                         <div className="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg flex items-center gap-1 border border-emerald-200">
                           <CheckCircle2 className="w-4 h-4" />
                           <span className="text-[10px] font-black uppercase hidden sm:inline">
-                            Перевірено
+                            Verified
                           </span>
                         </div>
                       )}
@@ -266,7 +261,7 @@ export default function DiscrepanciesPage() {
 
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-slate-600">
-                        <span className="font-semibold w-20">Власник:</span>
+                        <span className="font-semibold w-20">Owner:</span>
                         <span className="truncate">{plot.owner}</span>
                       </div>
 
@@ -289,7 +284,7 @@ export default function DiscrepanciesPage() {
                         animate={{ opacity: 1 }}
                         className="mt-4 pt-3 border-t border-indigo-100 flex items-center text-xs font-bold text-indigo-600 uppercase tracking-widest gap-1"
                       >
-                        Перегляд на карті <ChevronRight className="w-3 h-3" />
+                        Viewing on map <ChevronRight className="w-3 h-3" />
                       </motion.div>
                     )}
                   </Card>
@@ -306,6 +301,7 @@ export default function DiscrepanciesPage() {
               plots={filteredPlots}
               selectedPlotId={selectedPlotId}
             />
+
             <div className="absolute top-4 left-4 z-[400] pointer-events-none">
               <div className="bg-white/90 backdrop-blur-xl p-3 rounded-xl shadow-lg border border-slate-200 flex items-center gap-3">
                 <div className="bg-slate-100 p-2 rounded-lg border border-slate-200">
@@ -313,14 +309,14 @@ export default function DiscrepanciesPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">
-                    Шар
+                    Layer
                   </p>
                   <p className="text-sm font-black text-slate-900">
-                    Кадастр vs Супутник
+                    Cadastral vs Satellite
                   </p>
                 </div>
               </div>
-            </div>{" "}
+            </div>
           </Card>
         </div>
       </div>

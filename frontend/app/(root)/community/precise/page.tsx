@@ -29,10 +29,10 @@ const MapWithNoSSR = dynamic(() => import("@/components/map/MapComponent"), {
 
 // 1. MOCK_PLOT object (Rectangle)
 const MOCK_PLOT_COORDS: [number, number][] = [
-  [50.420708, 24.18828],
-  [50.419316, 24.187904],
-  [50.419273, 24.188376],
-  [50.420656, 24.188767],
+  [50.35, 24.25],
+  [50.352, 24.25],
+  [50.352, 24.254],
+  [50.35, 24.253],
 ];
 
 const MOCK_PLOT = {
@@ -80,38 +80,53 @@ export default function PrecisionSurveyingPage() {
     setAccuracy(null);
     lastPositionRef.current = null;
 
-    // Послідовні оновлення тексту
-    setTimeout(
-      () => setScanText("Отримання супутникових сигналів L1/L2..."),
-      0,
-    );
-    setTimeout(() => setScanText("Застосування RTK-поправок..."), 2000);
-    setTimeout(() => setScanText("Усереднення координат..."), 4000);
+    // Sequential scanning state text updates
+    setTimeout(() => setScanText("Acquiring L1/L2 satellite signals..."), 0);
+    setTimeout(() => setScanText("Applying RTK corrections..."), 2000);
+    setTimeout(() => setScanText("Averaging position..."), 4000);
 
-    // ІМІТАЦІЯ GPS ДЛЯ ДЕМОНСТРАЦІЇ
+    const startTime = new Date().getTime();
 
-    // Щоб екран виглядав "живим", змусимо точність "стрибати" кожні 800мс
-    const fakeAccuracyInterval = setInterval(() => {
-      // Випадкова точність від 1.5 до 4 метрів під час пошуку
-      setAccuracy(Math.random() * 2.5 + 1.5);
-    }, 800);
+    if ("geolocation" in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setAccuracy(position.coords.accuracy);
+          lastPositionRef.current = position;
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setScanText("GPS Error: " + error.message);
+          setTimeout(() => resetScan(), 3000);
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 },
+      );
 
-    // Через 6 секунд завершуємо "сканування" і видаємо результат
-    setTimeout(() => {
-      clearInterval(fakeAccuracyInterval); // Зупиняємо стрибки точності
+      const checkInterval = setInterval(() => {
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime >= 6000 && lastPositionRef.current) {
+          clearInterval(checkInterval);
+          navigator.geolocation.clearWatch(watchId);
 
-      // Наші замокані ідеальні координати
-      const generatedCoords: [number, number] = [50.4207, 24.1883];
+          const position = lastPositionRef.current;
+          const generatedCoords: [number, number] = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+          const isInside = isPointInPolygon(generatedCoords, MOCK_PLOT_COORDS);
 
-      // Фінальна ідеальна точність (наприклад, 5 сантиметрів)
-      setAccuracy(0.05);
-
-      // Перевіряємо, чи входить замокана точка в полігон
-      const isInside = isPointInPolygon(generatedCoords, MOCK_PLOT_COORDS);
-
-      setResult({ isInside, coords: generatedCoords });
-      setScanState("RESULT");
-    }, 6000);
+          setResult({ isInside, coords: generatedCoords });
+          setScanState("RESULT");
+        } else if (elapsedTime >= 30000) {
+          clearInterval(checkInterval);
+          navigator.geolocation.clearWatch(watchId);
+          setScanText("GPS Timeout");
+          setTimeout(() => resetScan(), 3000);
+        }
+      }, 500);
+    } else {
+      setScanText("Geolocation is not supported by your browser");
+      setTimeout(() => resetScan(), 3000);
+    }
   };
 
   const resetScan = () => {
@@ -127,11 +142,11 @@ export default function PrecisionSurveyingPage() {
           GEO-Аналіз
         </div>
         <h2 className="text-3xl lg:text-4xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-          GPS Висока точність
+          High-Precision GPS Survey
         </h2>
         <p className="text-slate-500 text-lg">
-          Професійний інструмент калібрування з симуляцією RTK та алгоритмом
-          геозон у реальному часі.
+          Professional calibration tool with RTK simulation and real-time
+          geofencing algorithm.
         </p>
       </div>
 
@@ -154,11 +169,11 @@ export default function PrecisionSurveyingPage() {
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold mb-3 text-white">
-                      Пристрій готовий
+                      Device Ready
                     </h3>
                     <p className="text-slate-400 text-sm max-w-[280px] leading-relaxed mx-auto">
-                      Розмістіть пристрій пласком на землі для стабілізації GPS
-                      та синхронізації RTK.
+                      Place the device flat on the ground for GPS stabilization
+                      and RTK synchronization.
                     </p>
                   </div>
                   <Button
@@ -166,7 +181,7 @@ export default function PrecisionSurveyingPage() {
                     className="mt-4 h-14 px-8 text-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] flex items-center gap-2 hover:-translate-y-1 transition-all"
                   >
                     <Zap className="w-5 h-5 fill-current" />
-                    Почати калібрування
+                    Start Calibration
                   </Button>
                 </motion.div>
               )}
@@ -221,7 +236,7 @@ export default function PrecisionSurveyingPage() {
 
                   <div className="w-full space-y-4">
                     <h3 className="text-xl font-bold text-indigo-300 uppercase tracking-widest animate-pulse">
-                      Калібрування
+                      Calibrating
                     </h3>
                     <div className="h-20 bg-slate-900/80 backdrop-blur-md rounded-xl flex flex-col items-center justify-center border border-white/10 px-4 shadow-inner">
                       <p className="text-slate-200 font-mono text-sm mb-1">
@@ -229,7 +244,7 @@ export default function PrecisionSurveyingPage() {
                       </p>
                       {accuracy !== null && (
                         <p className="text-emerald-400 font-mono text-xs font-bold animate-pulse">
-                          Точність: ±{accuracy.toFixed(2)}м
+                          Live Accuracy: ±{accuracy.toFixed(2)}m
                         </p>
                       )}
                     </div>
@@ -252,10 +267,10 @@ export default function PrecisionSurveyingPage() {
                       </div>
                       <div>
                         <h3 className="text-3xl font-bold text-emerald-400 mb-2">
-                          Всередині меж
+                          Inside Boundaries
                         </h3>
                         <p className="text-slate-300">
-                          Точка знаходиться всередині меж
+                          Point within boundaries
                         </p>
                       </div>
                     </>
@@ -266,9 +281,11 @@ export default function PrecisionSurveyingPage() {
                       </div>
                       <div>
                         <h3 className="text-3xl font-bold text-rose-400 mb-2">
-                          Поза межами
+                          Outside Boundaries
                         </h3>
-                        <p className="text-slate-300">Виявлено порушення меж</p>
+                        <p className="text-slate-300">
+                          Boundary violation detected
+                        </p>
                       </div>
                     </>
                   )}
@@ -276,39 +293,38 @@ export default function PrecisionSurveyingPage() {
                   <div className="w-full bg-slate-900/60 backdrop-blur-md p-5 rounded-xl border border-white/10 font-mono text-sm text-left mb-2 shadow-lg">
                     <div className="flex justify-between items-center text-slate-400 mb-2 pb-2 border-b border-white/5">
                       <span className="uppercase text-[10px] tracking-widest">
-                        Координати
+                        Coordinates
                       </span>
                       <Crosshair className="w-4 h-4" />
                     </div>
                     <div className="text-slate-300 mb-1">
-                      ШИР:{" "}
+                      LAT:{" "}
                       <span className="text-white font-bold">
                         {result.coords[0].toFixed(6)}
                       </span>
                     </div>
                     <div className="text-slate-300 mb-1">
-                      ДОВ:{" "}
+                      LNG:{" "}
                       <span className="text-white font-bold">
                         {result.coords[1].toFixed(6)}
                       </span>
                     </div>
                     {accuracy !== null && (
                       <div className="text-slate-300">
-                        ТОЧНІСТЬ:{" "}
+                        ACCURACY:{" "}
                         <span className="text-emerald-400 font-bold">
-                          ±{accuracy.toFixed(2)}м
+                          ±{accuracy.toFixed(2)}m
                         </span>
                       </div>
                     )}
                   </div>
 
                   <Button
-                    variant="outline"
                     onClick={resetScan}
                     className="w-full h-14 bg-transparent border-2 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-colors rounded-xl font-bold"
                   >
                     <RefreshCcw className="w-5 h-5 mr-2" />
-                    Скинути та повторити
+                    Reset & Rescan
                   </Button>
                 </motion.div>
               )}
@@ -332,10 +348,10 @@ export default function PrecisionSurveyingPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">
-                    Жива карта
+                    Live Map
                   </p>
                   <p className="text-sm font-black text-slate-900">
-                    Переглядач полігонів RTK
+                    RTK Polygon Viewer
                   </p>
                 </div>
               </div>
@@ -347,7 +363,7 @@ export default function PrecisionSurveyingPage() {
                 <div className="bg-indigo-600/90 backdrop-blur-xl px-4 py-2 rounded-full shadow-lg border border-indigo-500 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-white animate-ping" />
                   <span className="text-xs font-bold text-white uppercase tracking-wider">
-                    Жива синхронізація
+                    Live Sync
                   </span>
                 </div>
               </div>

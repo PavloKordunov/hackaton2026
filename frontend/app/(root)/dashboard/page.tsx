@@ -62,11 +62,11 @@ export const DashboardView = () => {
               <div className={`p-2.5 rounded-xl ${item.color}`}>
                 <item.icon className="w-5 h-5" />
               </div>
-              <span
+              {/* <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${item.trendColor}`}
               >
                 {item.trend}
-              </span>
+              </span> */}
             </div>
             <div className="space-y-1">
               <h3 className="text-3xl font-bold text-slate-900">
@@ -204,7 +204,7 @@ export const DashboardView = () => {
       </div>
 
       {/* Таблиця залишається без змін (з минулого повідомлення) */}
-      <Card className="overflow-hidden border-slate-100 shadow-sm">
+      {/* <Card className="overflow-hidden border-slate-100 shadow-sm">
         <div className="p-6 border-b border-slate-50 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-800">
             Останні запити у роботі
@@ -269,7 +269,7 @@ export const DashboardView = () => {
             </tbody>
           </table>
         </div>
-      </Card>
+      </Card> */}
     </div>
   );
 };
