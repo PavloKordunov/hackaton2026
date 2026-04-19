@@ -9,13 +9,29 @@ datasource db {
   directUrl  = env("DIRECT_URL")
 }
 
+enum UserRole {
+  ADMIN
+  COMMUNITY
+}
+
+enum TaxType {
+  LAND_TAX
+  RENT_TAX
+  PROPERTY_TAX
+  SINGLE_TAX
+  LOCAL_FEE
+}
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String            @id @default(uuid())
+  email       String            @unique
+  name        String?
+  password    String
+  role        UserRole          @default(ADMIN)
+  communityId String?           @map("community_id")
+  community   CommunityProfile? @relation(fields: [communityId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model LandRecord {
@@ -36,6 +52,10 @@ model LandRecord {
   registrarOrgan   String?   @map("registrar_organ")
   docType          String?   @map("doc_type")
   docSubtype       String?   @map("doc_subtype")
+  communityId      String?   @map("community_id")
+  settlementId     String?   @map("settlement_id")
+  community        CommunityProfile? @relation(fields: [communityId], references: [id])
+  settlement       CommunitySettlement? @relation(fields: [settlementId], references: [id])
   createdAt        DateTime  @default(now()) @map("created_at")
 }
 
@@ -51,4 +71,52 @@ model RealEstateRecord {
   ownershipType       String?   @map("ownership_type")
   ownershipShareValue Float?    @map("ownership_share_value")
   createdAt           DateTime  @default(now()) @map("created_at")
+}
+
+model CommunityProfile {
+  id             String                @id @default(uuid())
+  slug           String                @unique
+  name           String
+  region         String
+  district       String?
+  center         String
+  koatuu         String?               @unique
+  accountEmail   String?               @unique @map("account_email")
+  contactPhone   String?               @map("contact_phone")
+  notes          String?
+  users          User[]
+  settlements    CommunitySettlement[]
+  taxes          CommunityTax[]
+  landRecords    LandRecord[]
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+}
+
+model CommunitySettlement {
+  id           String             @id @default(uuid())
+  name         String
+  type         String
+  koatuu       String?
+  communityId  String             @map("community_id")
+  community    CommunityProfile   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  landRecords  LandRecord[]
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  @@unique([communityId, name])
+}
+
+model CommunityTax {
+  id                String             @id @default(uuid())
+  communityId       String             @map("community_id")
+  community         CommunityProfile   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  type              TaxType
+  name              String
+  rate              Decimal?           @db.Decimal(10, 2)
+  unit              String?
+  description       String?
+  payerCount        Int                @default(0) @map("payer_count")
+  annualRevenue     Decimal?           @map("annual_revenue") @db.Decimal(14, 2)
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
 }

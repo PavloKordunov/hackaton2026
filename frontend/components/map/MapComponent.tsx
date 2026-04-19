@@ -1,24 +1,46 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Polygon, Popup, useMap, Marker } from "react-leaflet";
+import { MapContainer, Marker, Polygon, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// 1. Створюємо допоміжний компонент, який живе ВСЕРЕДИНІ MapContainer
-function FitBounds({ plots, userLocation }: { plots: any[]; userLocation?: [number, number] | null }) {
-  const map = useMap(); // Отримуємо доступ до об'єкта карти Leaflet
+interface MapPlot {
+  id: string;
+  cadastralNumber: string;
+  owner: string;
+  coordinates: number[][];
+  discrepancy?: string;
+  color?: string;
+  fillOpacity?: number;
+  actualCoordinates?: number[][];
+}
+
+const toLatLngTuple = (coord: number[]): [number, number] => [
+  coord[0] ?? 0,
+  coord[1] ?? 0,
+];
+
+const normalizeCoordinates = (coordinates: number[][]): [number, number][] =>
+  coordinates.map(toLatLngTuple);
+
+function FitBounds({
+  plots,
+  userLocation,
+}: {
+  plots: MapPlot[];
+  userLocation?: [number, number] | null;
+}) {
+  const map = useMap();
 
   useEffect(() => {
-    if (!plots || plots.length === 0) return;
+    if (!plots.length) return;
 
-    // Створюємо порожній об'єкт меж
     const bounds = L.latLngBounds([]);
 
-    // Проходимося по всіх координатах усіх ділянок і розширюємо межі
     plots.forEach((plot) => {
-      plot.coordinates.forEach((coord: [number, number]) => {
-        bounds.extend(coord);
+      plot.coordinates.forEach((coord) => {
+        bounds.extend(toLatLngTuple(coord));
       });
     });
 
@@ -26,41 +48,47 @@ function FitBounds({ plots, userLocation }: { plots: any[]; userLocation?: [numb
       bounds.extend(userLocation);
     }
 
-    // Якщо межі валідні, центруємо карту з невеликим відступом (padding)
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [50, 50] }); // 50px відступу від країв екрану
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [plots, map, userLocation]); // useEffect спрацює щоразу, коли зміняться дані ділянок або локація користувача
+  }, [plots, map, userLocation]);
 
-  return null; // Цей компонент не рендерить HTML, він лише керує логікою карти
+  return null;
 }
 
-function SelectedPlotPanner({ plots, selectedPlotId }: { plots: any[]; selectedPlotId?: string | null }) {
+function SelectedPlotPanner({
+  plots,
+  selectedPlotId,
+}: {
+  plots: MapPlot[];
+  selectedPlotId?: string | null;
+}) {
   const map = useMap();
+
   useEffect(() => {
     if (!selectedPlotId) return;
-    const plot = plots.find((p) => p.id === selectedPlotId);
+
+    const plot = plots.find((item) => item.id === selectedPlotId);
     if (!plot) return;
-    const bounds = L.latLngBounds(plot.coordinates);
+
+    const bounds = L.latLngBounds(normalizeCoordinates(plot.coordinates));
     if (bounds.isValid()) {
       map.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
     }
   }, [selectedPlotId, plots, map]);
+
   return null;
 }
 
 interface MapProps {
-  plots: any[];
+  plots: MapPlot[];
   userLocation?: [number, number] | null;
   selectedPlotId?: string | null;
 }
 
 export default function Map({ plots, userLocation, selectedPlotId }: MapProps) {
-  // Тепер center і zoom тут є лише "стартовими" значеннями.
-  // Наш компонент FitBounds миттєво їх перевизначить.
   const initialCenter: [number, number] = [50.35, 24.25];
 
-  // Створюємо іконку для синьої крапки
   const pulsingBlueIcon = L.divIcon({
     className: "bg-transparent",
     html: `<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_15px_3px_rgba(59,130,246,0.8)] animate-pulse"></div>`,
@@ -80,16 +108,16 @@ export default function Map({ plots, userLocation, selectedPlotId }: MapProps) {
         subdomains={["mt0", "mt1", "mt2", "mt3"]}
       />
 
-      {/* 2. Додаємо наш новий компонент всередину карти */}
       {!selectedPlotId && <FitBounds plots={plots} userLocation={userLocation} />}
       <SelectedPlotPanner plots={plots} selectedPlotId={selectedPlotId} />
 
       {plots.map((plot) => {
         const isSelected = selectedPlotId === plot.id;
+
         return (
           <React.Fragment key={plot.id}>
             <Polygon
-              positions={plot.coordinates}
+              positions={normalizeCoordinates(plot.coordinates)}
               pathOptions={{
                 color: plot.color || "#00ffaa",
                 fillOpacity: isSelected ? 0.7 : plot.fillOpacity || 0.4,
@@ -98,8 +126,9 @@ export default function Map({ plots, userLocation, selectedPlotId }: MapProps) {
             >
               <Popup>
                 <div className="p-2 text-gray-800 max-w-[250px]">
-                  {" "}
-                  <p className="border-b pb-1 mb-2 font-bold text-lg">Деталі об'єкта</p>
+                  <p className="border-b pb-1 mb-2 font-bold text-lg">
+                    Деталі об&apos;єкта
+                  </p>
                   <p className="mb-1">
                     <strong>Кадастровий:</strong> {plot.cadastralNumber}
                   </p>
@@ -114,9 +143,10 @@ export default function Map({ plots, userLocation, selectedPlotId }: MapProps) {
                 </div>
               </Popup>
             </Polygon>
+
             {plot.actualCoordinates && (
               <Polygon
-                positions={plot.actualCoordinates}
+                positions={normalizeCoordinates(plot.actualCoordinates)}
                 pathOptions={{
                   color: "#ef4444",
                   fillOpacity: 0.3,

@@ -3,13 +3,13 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { 
-  Satellite, 
-  MapPinned, 
-  Lock, 
-  Mail, 
+import {
+  Satellite,
+  MapPinned,
+  Lock,
+  Mail,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { Card } from "@/components/ui";
 
@@ -25,23 +25,21 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    // Mock authentication delay
     setTimeout(() => {
-      if (email === "admin@resilog.ua" && password === "admin") {
+      if (email === "otg.chervonohrad@demo.ua" && password === "otg123") {
         router.push("/dashboard");
       } else if (email && password) {
-        // Accept any credentials for the hackathon demo
         router.push("/dashboard");
       } else {
         setError("Будь ласка, введіть email та пароль");
         setIsLoading(false);
       }
-    }, 1500);
+    }, 900);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -51,15 +49,15 @@ export default function LoginPage() {
           <MapPinned className="w-8 h-8 text-indigo-600" />
         </div>
         <h2 className="mt-2 text-center text-3xl font-bold tracking-tight text-slate-900">
-          Увійдіть у систему
+          Увійдіть у кабінет громади
         </h2>
         <p className="mt-2 text-center text-sm text-slate-500 font-medium flex items-center gap-2">
-          <Satellite className="w-4 h-4" /> 
-          Resilog UA — Моніторинг активів ОТГ
+          <Satellite className="w-4 h-4" />
+          Resilog UA — моніторинг активів ОТГ
         </p>
       </motion.div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
@@ -67,9 +65,8 @@ export default function LoginPage() {
       >
         <Card className="py-8 px-4 sm:px-10 border-slate-200 shadow-xl shadow-slate-200/50">
           <form className="space-y-6" onSubmit={handleLogin}>
-            
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 className="bg-rose-50 border border-rose-100 text-rose-600 p-3 rounded-xl flex items-center gap-3 text-sm font-medium"
@@ -79,9 +76,15 @@ export default function LoginPage() {
               </motion.div>
             )}
 
+            <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-4 text-sm text-indigo-700">
+              Демо-акаунт ОТГ: <span className="font-bold">otg.chervonohrad@demo.ua</span>
+              <br />
+              Пароль: <span className="font-bold">otg123</span>
+            </div>
+
             <div>
-              <label 
-                htmlFor="email" 
+              <label
+                htmlFor="email"
                 className="block text-xs font-bold text-slate-600 uppercase tracking-wider ml-1 mb-2"
               >
                 Електронна пошта
@@ -99,14 +102,14 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm font-medium"
-                  placeholder="admin@resilog.ua"
+                  placeholder="otg.chervonohrad@demo.ua"
                 />
               </div>
             </div>
 
             <div>
-              <label 
-                htmlFor="password" 
+              <label
+                htmlFor="password"
                 className="block text-xs font-bold text-slate-600 uppercase tracking-wider ml-1 mb-2"
               >
                 Пароль
@@ -124,7 +127,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all sm:text-sm font-medium"
-                  placeholder="••••••••"
+                  placeholder="otg123"
                 />
               </div>
             </div>
@@ -137,8 +140,11 @@ export default function LoginPage() {
                   type="checkbox"
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600 font-medium cursor-pointer">
-                  Запам'ятати мене
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-slate-600 font-medium cursor-pointer"
+                >
+                  Запам&apos;ятати мене
                 </label>
               </div>
 
